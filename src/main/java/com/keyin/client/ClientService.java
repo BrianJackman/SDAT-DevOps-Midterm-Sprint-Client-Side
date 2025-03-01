@@ -5,78 +5,47 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class ClientService {
-    private static final String BASE_URL = "http://localhost:8080";
 
-    public String getCities() throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/cities");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
+    private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
+    private static final String BASE_URL = "http://localhost:8080/api"; // Replace with your actual API URL
+    private final CloseableHttpClient httpClient;
+
+    public ClientService() {
+        this.httpClient = HttpClients.createDefault();
     }
 
-    public String getAirports() throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/airports");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
+    public String getAirportsInCities() throws Exception {
+        return executeRequest("/airports-in-cities");
     }
 
-    public String getPassengers() throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/passengers");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
+    public String getAircraftPassengersTravelledOn() throws Exception {
+        return executeRequest("/aircraft-passengers-travelled-on");
     }
 
-    public String getAircraft() throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/aircraft");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
+    public String getAirportsForAircraft() throws Exception {
+        return executeRequest("/airports-for-aircraft");
     }
 
-    public String getAirportsByCity(long cityId) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/cities/" + cityId + "/airports");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
+    public String getAirportsUsedByPassengers() throws Exception {
+        return executeRequest("/airports-used-by-passengers");
     }
 
-    public String getAircraftByPassenger(long passengerId) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/passengers/" + passengerId + "/aircraft");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
+    private String executeRequest(String endpoint) throws Exception {
+        HttpGet request = new HttpGet(BASE_URL + endpoint);
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 200 && statusCode < 300) {
                 return EntityUtils.toString(response.getEntity());
-            }
-        }
-    }
-
-    public String getAirportsByAircraft(long aircraftId) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/aircraft/" + aircraftId + "/airports");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        }
-    }
-
-    public String getAirportsUsedByPassenger(long passengerId) throws Exception {
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(BASE_URL + "/passengers/" + passengerId + "/airports");
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
+            } else {
+                String errorMessage = EntityUtils.toString(response.getEntity());
+                logger.error("Error fetching data from {}: {} - {}", endpoint, statusCode, errorMessage);
+                throw new IOException("Error fetching data from " + endpoint + ": " + statusCode + " - " + errorMessage);
             }
         }
     }
